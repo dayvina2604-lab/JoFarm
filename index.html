@@ -447,6 +447,17 @@
 
           document.getElementById('bal-hand').innerText = 'Rp ' + Number(res.balances.cashInHand).toLocaleString('id-ID');
           document.getElementById('bal-bank').innerText = 'Rp ' + Number(res.balances.cashInBank).toLocaleString('id-ID');
+
+          // Perjelas label saldo berdasarkan kepemilikan
+          const subTextHand = document.querySelector('#bal-hand + span');
+          const subTextBank = document.querySelector('#bal-bank + span');
+          if (res.balances.isGlobal) {
+            if (subTextHand) subTextHand.innerText = 'Total Kas Fisik (Global)';
+            if (subTextBank) subTextBank.innerText = 'Total Bank (Global)';
+          } else {
+            if (subTextHand) subTextHand.innerText = `Pegang Kas: ${currentUser.name}`;
+            if (subTextBank) subTextBank.innerText = `Rekening Ops: ${currentUser.name}`;
+          }
         }
       } catch (err) {
         document.getElementById('user-display').innerText = 'Gagal memuat profil';
