@@ -22,7 +22,7 @@
         <p id="user-display" class="text-[11px] text-emerald-200">Memverifikasi akun...</p>
       </div>
       <div class="flex items-center space-x-2">
-        <button onclick="initApp()" class="text-xs bg-emerald-800/80 hover:bg-emerald-700 px-2 py-1 rounded-lg border border-emerald-600 transition-all">🔄</button>
+        <button onclick="initApp()" title="Segarkan Data" class="text-xs bg-emerald-800/80 hover:bg-emerald-700 px-2.5 py-1 rounded-lg border border-emerald-600 transition-all">🔄</button>
         <span id="role-badge" class="bg-emerald-900/80 text-emerald-100 text-[10px] px-2.5 py-1 rounded-full font-medium border border-emerald-700">
           Kas Mini App
         </span>
@@ -62,26 +62,20 @@
         <!-- SCAN FOTO NOTA -->
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">Bukti Nota / Kuitansi</label>
-          <label class="flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-xl p-3 cursor-pointer hover:bg-slate-50 transition-colors">
+          <label class="flex flex-col items-center justify-center border-2 border-dashed border-emerald-200 bg-emerald-50/30 rounded-xl p-3.5 cursor-pointer hover:bg-emerald-50 transition-colors">
             <svg class="w-6 h-6 text-emerald-700 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
             </svg>
-            <span class="text-xs font-semibold text-slate-700">Foto Nota (Scan AI)</span>
-            <span class="text-[10px] text-slate-400">Otomatis isi nominal & rincian</span>
-            <input type="file" id="tx-photo" accept="image/*" capture="environment" class="hidden">
+            <span class="text-xs font-bold text-emerald-900">Ambil Foto / Upload Nota</span>
+            <span class="text-[10px] text-slate-500 mt-0.5">AI akan otomatis membaca rincian & nominal</span>
+            <!-- Tidak memakai capture environment kaku agar pengguna bisa pilih Galeri atau Kamera tanpa crash -->
+            <input type="file" id="tx-photo" accept="image/*" class="hidden">
           </label>
 
-          <div id="ai-loading" class="hidden mt-2 p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center space-x-2 text-emerald-800 text-xs">
-            <svg class="animate-spin h-4 w-4 text-emerald-700" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-            </svg>
-            <span>✨ Gemini AI sedang membaca nota...</span>
-          </div>
-
-          <div id="preview-box" class="hidden mt-2">
+          <div id="preview-box" class="hidden mt-2 relative">
             <img id="photo-preview" class="w-full max-h-44 object-cover rounded-xl border border-slate-200">
+            <button type="button" onclick="removePhoto()" class="absolute top-2 right-2 bg-rose-600 text-white text-[10px] px-2 py-1 rounded-lg shadow font-semibold">Hapus Foto</button>
           </div>
         </div>
 
@@ -144,13 +138,13 @@
           <input type="text" id="tx-desc" placeholder="Contoh: Beli pakan grower 2 sak" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-emerald-600">
         </div>
 
-        <!-- BADGE IDENTITAS PETUGAS (OTOMATIS & TERKUNCI) -->
+        <!-- BADGE IDENTITAS PETUGAS -->
         <div class="bg-slate-100 p-3 rounded-xl border border-slate-200 flex justify-between items-center text-xs">
           <span class="text-slate-500 font-medium">Petugas Input:</span>
           <span id="tx-admin-badge" class="font-bold text-[#1B4D3E]">Memverifikasi...</span>
         </div>
 
-        <!-- PERINGATAN AKSES DITOLAK (JIKA BELUM DIDAFTARKAN KE TAB USERS) -->
+        <!-- PERINGATAN AKSES DITOLAK -->
         <div id="access-denied-box" class="hidden p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-xs space-y-1">
           <p class="font-bold">⛔ Akses Input Terkunci</p>
           <p>ID Telegram Anda belum terdaftar di tab <b>Users</b> spreadsheet.</p>
@@ -228,18 +222,48 @@
     </section>
   </main>
 
-  <!-- MODAL ANTI-DOUBLE INPUT -->
+  <!-- ==================== MODAL 1: OVERLAY LOADING AI (JELAS & AKTIF) ==================== -->
+  <div id="ai-modal-loading" class="hidden fixed inset-0 bg-slate-900/75 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+    <div class="bg-white max-w-xs w-full rounded-2xl p-6 text-center space-y-4 shadow-2xl border border-slate-100">
+      <div class="relative w-16 h-16 mx-auto">
+        <div class="absolute inset-0 rounded-full border-4 border-emerald-100 animate-ping"></div>
+        <div class="w-16 h-16 rounded-full border-4 border-emerald-600 border-t-transparent animate-spin"></div>
+        <span class="absolute inset-0 flex items-center justify-center text-xl">✨</span>
+      </div>
+      <div>
+        <h3 class="text-sm font-bold text-slate-800" id="ai-status-title">Memproses Nota...</h3>
+        <p class="text-xs text-slate-500 mt-1" id="ai-status-desc">Gemini AI sedang membaca rincian nota belanja</p>
+      </div>
+      <button type="button" onclick="cancelAiScan()" class="text-xs text-slate-400 hover:text-slate-600 underline font-medium">
+        Batal & Isi Manual
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 2: PESAN ERROR RAMAH PENGGUNA ==================== -->
+  <div id="modal-error" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+    <div class="bg-white max-w-sm w-full rounded-2xl p-5 space-y-3 shadow-xl text-center">
+      <div class="w-12 h-12 bg-amber-100 text-amber-700 rounded-full flex items-center justify-center mx-auto text-xl font-bold">⚠️</div>
+      <h3 class="text-sm font-bold text-slate-800" id="err-modal-title">Perhatian</h3>
+      <p class="text-xs text-slate-600 leading-relaxed" id="err-modal-msg">Terjadi kesalahan.</p>
+      <button type="button" onclick="closeErrorModal()" class="w-full bg-[#1B4D3E] text-white py-2.5 rounded-xl text-xs font-semibold">
+        Mengerti
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 3: ANTI-DOUBLE INPUT ==================== -->
   <div id="modal-duplicate" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-    <div class="bg-white max-w-sm w-full rounded-2xl p-5 space-y-4 shadow-xl border border-slate-100 animate-in fade-in zoom-in duration-150">
+    <div class="bg-white max-w-sm w-full rounded-2xl p-5 space-y-4 shadow-xl border border-slate-100">
       <div class="flex items-center space-x-2 text-amber-600">
         <span class="text-xl">⚠️</span>
         <h3 class="text-sm font-bold text-slate-800">Transaksi Serupa Terdeteksi!</h3>
       </div>
       <p class="text-xs text-slate-600 leading-relaxed">
-        Transaksi dengan nominal dan rincian identik telah dicatat sebelumnya oleh:
+        Transaksi dengan nominal dan akun ini telah dicatat sebelumnya oleh:
       </p>
       <div id="dup-detail" class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs space-y-1 font-mono text-slate-700"></div>
-      <p class="text-[11px] text-slate-500">Apakah ini transaksi berbeda atau tidak sengaja tertekan dua kali?</p>
+      <p class="text-[11px] text-slate-500">Apakah ini transaksi yang berbeda?</p>
       <div class="grid grid-cols-2 gap-2 pt-2">
         <button type="button" onclick="closeDuplicateModal()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2.5 rounded-xl text-xs">
           Batalkan
@@ -287,6 +311,7 @@
     let base64Photo = null;
     let pendingPayload = null;
     let currentPeriod = 'week';
+    let scanAbortController = null;
 
     const categories = {
       Pengeluaran: ['Pakan', 'Obat/Vaksin', 'Operasional', 'Peralatan', 'Lain-lain'],
@@ -305,7 +330,41 @@
       });
     }
 
-    // Inisialisasi Data Pengguna & Pengecekan Hak Akses
+    function showErrorModal(title, msg) {
+      document.getElementById('err-modal-title').innerText = title;
+      document.getElementById('err-modal-msg').innerText = msg;
+      document.getElementById('modal-error').classList.remove('hidden');
+    }
+
+    function closeErrorModal() {
+      document.getElementById('modal-error').classList.add('hidden');
+    }
+
+    function showAiLoading(title, desc) {
+      document.getElementById('ai-status-title').innerText = title;
+      document.getElementById('ai-status-desc').innerText = desc;
+      document.getElementById('ai-modal-loading').classList.remove('hidden');
+    }
+
+    function hideAiLoading() {
+      document.getElementById('ai-modal-loading').classList.add('hidden');
+    }
+
+    function cancelAiScan() {
+      if (scanAbortController) {
+        scanAbortController.abort();
+      }
+      hideAiLoading();
+      showErrorModal('Pemindaian Dibatalkan', 'Silakan isi nominal dan rincian transaksi secara manual.');
+    }
+
+    function removePhoto() {
+      base64Photo = null;
+      document.getElementById('tx-photo').value = '';
+      document.getElementById('preview-box').classList.add('hidden');
+    }
+
+    // Inisialisasi Akun
     async function initApp() {
       updateCategoryOptions();
       document.getElementById('tx-date').valueAsDate = new Date();
@@ -364,9 +423,9 @@
       }
     }
 
-    // Kompresi Gambar Canvas
-    function compressImage(file) {
-      return new Promise((resolve) => {
+    // Kompresi Gambar Aman RAM (Maksimal 800px & Kualitas 0.6)
+    function compressImageSafe(file) {
+      return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.readAsDataURL(file);
         reader.onload = (e) => {
@@ -376,37 +435,46 @@
             const canvas = document.createElement('canvas');
             let w = img.width;
             let h = img.height;
-            const max = 1000;
-            if (w > max) { h = Math.round((h * max) / w); w = max; }
-            canvas.width = w; canvas.height = h;
+            const max = 800; // Ukuran optimal agar RAM HP tidak overload
+            if (w > h) {
+              if (w > max) { h = Math.round((h * max) / w); w = max; }
+            } else {
+              if (h > max) { w = Math.round((w * max) / h); h = max; }
+            }
+            canvas.width = w;
+            canvas.height = h;
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, w, h);
-            resolve(canvas.toDataURL('image/jpeg', 0.7));
+            const compressed = canvas.toDataURL('image/jpeg', 0.6);
+            resolve(compressed);
           };
+          img.onerror = () => reject(new Error('Gagal merender gambar'));
         };
+        reader.onerror = () => reject(new Error('Gagal membaca file foto'));
       });
     }
 
-    // Scan Nota via Gemini
+    // Pemrosesan Scan Nota
     document.getElementById('tx-photo').addEventListener('change', async function(e) {
       const file = e.target.files[0];
       if (!file) return;
 
-      const loading = document.getElementById('ai-loading');
-      const previewBox = document.getElementById('preview-box');
-      const previewImg = document.getElementById('photo-preview');
+      showAiLoading('Mengompres Foto...', 'Menyiapkan nota dengan ukuran hemat memori');
 
       try {
-        loading.classList.remove('hidden');
-        previewBox.classList.add('hidden');
+        base64Photo = await compressImageSafe(file);
+        document.getElementById('photo-preview').src = base64Photo;
+        document.getElementById('preview-box').classList.remove('hidden');
 
-        base64Photo = await compressImage(file);
-        previewImg.src = base64Photo;
+        showAiLoading('Gemini AI Membaca...', 'Menganalisis nominal dan rincian struk');
 
+        scanAbortController = new AbortController();
         const res = await apiCall('scanReceipt', {
           imageBase64: base64Photo,
           imageMime: 'image/jpeg'
-        });
+        }, scanAbortController.signal);
+
+        hideAiLoading();
 
         if (res.success && res.data) {
           const d = res.data;
@@ -424,19 +492,19 @@
           if (d.kategori) document.getElementById('tx-category').value = d.kategori;
 
           if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-          previewBox.classList.remove('hidden');
+        } else {
+          showErrorModal('Nota Kurang Jelas', res.message || 'Data struk tidak terbaca lengkap. Foto tetap terlampir, silakan lengkapi nominal & keterangan secara manual.');
         }
       } catch (err) {
-        alert('Gagal membaca nota: ' + err.toString());
-      } finally {
-        loading.classList.add('hidden');
+        hideAiLoading();
+        showErrorModal('Info Pemindaian', 'Koneksi AI sedang lambat. Foto nota tetap terpasang, silakan isi nominal & keterangan secara manual.');
       }
     });
 
-    // Submit Transaksi
+    // Simpan Transaksi
     document.getElementById('tx-form').addEventListener('submit', async function(e) {
       e.preventDefault();
-      if (!currentUser) return alert('Akses ditolak: ID Anda belum terdaftar.');
+      if (!currentUser) return showErrorModal('Akses Ditolak', 'ID Anda belum terdaftar di spreadsheet.');
 
       const btn = document.getElementById('btn-submit');
       btn.disabled = true;
@@ -472,7 +540,7 @@
 
         await executeSave(payload);
       } catch (err) {
-        alert('Gagal: ' + err.toString());
+        showErrorModal('Gagal Memeriksa', err.message);
         btn.disabled = false;
         btn.innerText = 'Simpan Transaksi';
       }
@@ -483,22 +551,26 @@
       btn.disabled = true;
       btn.innerText = 'Menyimpan ke Sheets...';
 
-      const res = await apiCall('saveTransaction', payload);
-      if (res.success) {
-        if (tg?.showAlert) tg.showAlert('Transaksi berhasil disimpan!');
-        else alert('Transaksi berhasil disimpan!');
+      try {
+        const res = await apiCall('saveTransaction', payload);
+        if (res.success) {
+          if (tg?.showAlert) tg.showAlert('Transaksi berhasil disimpan!');
+          else alert('Transaksi berhasil disimpan!');
 
-        document.getElementById('tx-form').reset();
-        document.getElementById('preview-box').classList.add('hidden');
-        document.getElementById('tx-date').valueAsDate = new Date();
-        base64Photo = null;
-        pendingPayload = null;
-        initApp();
-      } else {
-        alert('Gagal: ' + res.message);
+          document.getElementById('tx-form').reset();
+          removePhoto();
+          document.getElementById('tx-date').valueAsDate = new Date();
+          pendingPayload = null;
+          initApp();
+        } else {
+          showErrorModal('Gagal Menyimpan', res.message);
+        }
+      } catch (err) {
+        showErrorModal('Koneksi Terputus', 'Gagal menghubungi database Google Sheets: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerText = 'Simpan Transaksi';
       }
-      btn.disabled = false;
-      btn.innerText = 'Simpan Transaksi';
     }
 
     function closeDuplicateModal() {
@@ -520,38 +592,42 @@
       const past = new Date();
       past.setDate(now.getDate() - 30);
 
-      const res = await apiCall('getReport', {
-        userId: currentTelegramId,
-        startDate: past.toISOString().split('T')[0],
-        endDate: now.toISOString().split('T')[0],
-        selectedAdmin: 'Semua'
-      });
-
-      if (res.success && res.transactions.length > 0) {
-        listEl.innerHTML = '';
-        res.transactions.forEach(tx => {
-          const isMasuk = tx.jenis === 'Pemasukan';
-          const card = document.createElement('div');
-          card.className = 'bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-sm flex justify-between items-center';
-          card.innerHTML = `
-            <div>
-              <div class="flex items-center space-x-1.5">
-                <span class="text-xs font-bold text-slate-800">${tx.kategori}</span>
-                <span class="text-[10px] px-1.5 py-0.2 bg-slate-100 text-slate-500 rounded font-medium">${tx.akun}</span>
-              </div>
-              <p class="text-[11px] text-slate-500 mt-0.5">${tx.keterangan}</p>
-              <div class="text-[10px] text-slate-400 mt-1">${tx.tanggal} • ${tx.inputBy}</div>
-            </div>
-            <div class="text-right">
-              <span class="text-xs font-black ${isMasuk ? 'text-emerald-600' : 'text-rose-600'}">
-                ${isMasuk ? '+' : '-'} Rp ${Number(tx.nominal).toLocaleString('id-ID')}
-              </span>
-            </div>
-          `;
-          listEl.appendChild(card);
+      try {
+        const res = await apiCall('getReport', {
+          userId: currentTelegramId,
+          startDate: past.toISOString().split('T')[0],
+          endDate: now.toISOString().split('T')[0],
+          selectedAdmin: 'Semua'
         });
-      } else {
-        listEl.innerHTML = '<p class="text-center text-xs text-slate-400 py-8">Belum ada riwayat transaksi.</p>';
+
+        if (res.success && res.transactions.length > 0) {
+          listEl.innerHTML = '';
+          res.transactions.forEach(tx => {
+            const isMasuk = tx.jenis === 'Pemasukan';
+            const card = document.createElement('div');
+            card.className = 'bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-sm flex justify-between items-center';
+            card.innerHTML = `
+              <div>
+                <div class="flex items-center space-x-1.5">
+                  <span class="text-xs font-bold text-slate-800">${tx.kategori}</span>
+                  <span class="text-[10px] px-1.5 py-0.2 bg-slate-100 text-slate-500 rounded font-medium">${tx.akun}</span>
+                </div>
+                <p class="text-[11px] text-slate-500 mt-0.5">${tx.keterangan}</p>
+                <div class="text-[10px] text-slate-400 mt-1">${tx.tanggal} • ${tx.inputBy}</div>
+              </div>
+              <div class="text-right">
+                <span class="text-xs font-black ${isMasuk ? 'text-emerald-600' : 'text-rose-600'}">
+                  ${isMasuk ? '+' : '-'} Rp ${Number(tx.nominal).toLocaleString('id-ID')}
+                </span>
+              </div>
+            `;
+            listEl.appendChild(card);
+          });
+        } else {
+          listEl.innerHTML = '<p class="text-center text-xs text-slate-400 py-8">Belum ada riwayat transaksi.</p>';
+        }
+      } catch (err) {
+        listEl.innerHTML = '<p class="text-center text-xs text-rose-500 py-8">Gagal memuat riwayat.</p>';
       }
     }
 
@@ -559,19 +635,12 @@
       currentPeriod = p;
       ['week', 'month', 'custom'].forEach(id => {
         const b = document.getElementById(`btn-period-${id}`);
-        if (id === p) {
-          b.className = 'py-1.5 rounded-lg bg-white text-emerald-800 shadow-sm transition-all';
-        } else {
-          b.className = 'py-1.5 rounded-lg transition-all';
-        }
+        b.className = id === p ? 'py-1.5 rounded-lg bg-white text-emerald-800 shadow-sm transition-all' : 'py-1.5 rounded-lg transition-all';
       });
 
       const customBox = document.getElementById('custom-date-box');
-      if (p === 'custom') {
-        customBox.classList.remove('hidden');
-      } else {
-        customBox.classList.add('hidden');
-      }
+      if (p === 'custom') customBox.classList.remove('hidden');
+      else customBox.classList.add('hidden');
     }
 
     async function fetchReport() {
@@ -586,42 +655,45 @@
       } else {
         const sVal = document.getElementById('rep-start').value;
         const eVal = document.getElementById('rep-end').value;
-        if (!sVal || !eVal) return alert('Pilih rentang tanggal terlebih dahulu.');
+        if (!sVal || !eVal) return showErrorModal('Peringatan', 'Pilih rentang tanggal terlebih dahulu.');
         start = new Date(sVal);
         end = new Date(eVal);
       }
 
       const adminFilter = document.getElementById('rep-admin-select').value || 'Semua';
 
-      const res = await apiCall('getReport', {
-        userId: currentTelegramId,
-        startDate: start.toISOString().split('T')[0],
-        endDate: end.toISOString().split('T')[0],
-        selectedAdmin: adminFilter
-      });
+      try {
+        const res = await apiCall('getReport', {
+          userId: currentTelegramId,
+          startDate: start.toISOString().split('T')[0],
+          endDate: end.toISOString().split('T')[0],
+          selectedAdmin: adminFilter
+        });
 
-      if (res.success) {
-        document.getElementById('rep-masuk').innerText = 'Rp ' + Number(res.summary.pemasukan).toLocaleString('id-ID');
-        document.getElementById('rep-keluar').innerText = 'Rp ' + Number(res.summary.pengeluaran).toLocaleString('id-ID');
+        if (res.success) {
+          document.getElementById('rep-masuk').innerText = 'Rp ' + Number(res.summary.pemasukan).toLocaleString('id-ID');
+          document.getElementById('rep-keluar').innerText = 'Rp ' + Number(res.summary.pengeluaran).toLocaleString('id-ID');
 
-        const catBox = document.getElementById('category-breakdown');
-        catBox.innerHTML = '';
-        const cats = Object.keys(res.byCategory);
-        if (cats.length === 0) {
-          catBox.innerHTML = '<p class="text-slate-400 text-center py-2">Tidak ada pengeluaran pada periode ini.</p>';
-        } else {
-          cats.forEach(c => {
-            const val = res.byCategory[c];
-            const div = document.createElement('div');
-            div.className = 'flex justify-between items-center py-1 border-b border-slate-100';
-            div.innerHTML = `<span class="text-slate-600">${c}</span><span class="font-bold text-slate-800">Rp ${Number(val).toLocaleString('id-ID')}</span>`;
-            catBox.appendChild(div);
-          });
+          const catBox = document.getElementById('category-breakdown');
+          catBox.innerHTML = '';
+          const cats = Object.keys(res.byCategory);
+          if (cats.length === 0) {
+            catBox.innerHTML = '<p class="text-slate-400 text-center py-2">Tidak ada pengeluaran pada periode ini.</p>';
+          } else {
+            cats.forEach(c => {
+              const val = res.byCategory[c];
+              const div = document.createElement('div');
+              div.className = 'flex justify-between items-center py-1 border-b border-slate-100';
+              div.innerHTML = `<span class="text-slate-600">${c}</span><span class="font-bold text-slate-800">Rp ${Number(val).toLocaleString('id-ID')}</span>`;
+              catBox.appendChild(div);
+            });
+          }
         }
+      } catch (err) {
+        showErrorModal('Laporan Gagal', 'Tidak dapat mengambil rekapan data: ' + err.message);
       }
     }
 
-    // Switch Tab
     function switchTab(tab) {
       ['input', 'history', 'report'].forEach(t => {
         document.getElementById(`view-${t}`).classList.add('hidden');
@@ -641,14 +713,38 @@
       if (tab === 'report') fetchReport();
     }
 
-    // Helper API Fetch
-    async function apiCall(action, payload) {
-      const res = await fetch(GAS_API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: action, payload: payload })
-      });
-      return await res.json();
+    // Helper API Fetch dengan Deteksi Error HTML & Timeout Aman
+    async function apiCall(action, payload, externalSignal) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 28000); // 28 detik timeout
+
+      try {
+        const res = await fetch(GAS_API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ action: action, payload: payload }),
+          signal: externalSignal || controller.signal
+        });
+        clearTimeout(timeoutId);
+
+        const rawText = await res.text();
+        let json;
+        try {
+          json = JSON.parse(rawText);
+        } catch (err) {
+          if (rawText.includes('<!DOCTYPE') || rawText.includes('<html')) {
+            throw new Error('Server Apps Script lambat merespons. Silakan ulangi atau input manual.');
+          }
+          throw new Error('Format balasan server tidak sesuai.');
+        }
+        return json;
+      } catch (err) {
+        clearTimeout(timeoutId);
+        if (err.name === 'AbortError') {
+          throw new Error('Waktu pemrosesan habis (Timeout). Jaringan lambat.');
+        }
+        throw err;
+      }
     }
 
     initApp();
