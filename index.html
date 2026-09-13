@@ -141,7 +141,19 @@
           <label class="block text-xs font-semibold text-slate-600 mb-1">Keterangan</label>
           <input type="text" id="tx-desc" placeholder="Contoh: Beli pakan grower 2 sak" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-emerald-600">
         </div>
-
+        
+<!-- 👇 SISIPKAN KODE DI SINI (INPUT NAMA ADMIN PENGINPUT) 👇 -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Admin Penginput</label>
+          <select id="tx-admin-name" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-emerald-600 bg-slate-50">
+            <option value="Superadmin - Owner">Superadmin - Owner</option>
+            <option value="Oma Erna">Oma Erna</option>
+            <option value="Nando">Nando</option>
+            <option value="Acha - AA">Acha - AA</option>
+            <option value="Kak Nana - Koko">Kak Nana - Koko</option>
+          </select>
+        </div>
+        
         <!-- TOMBOL SIMPAN -->
         <button type="submit" id="btn-submit" class="w-full bg-[#1B4D3E] hover:bg-[#153e32] active:scale-[0.99] text-white font-semibold py-3 rounded-xl text-xs transition-all shadow-sm">
           Simpan Transaksi
@@ -298,21 +310,31 @@ const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwL9guFckX7YicIvHuh
     }
 
     // Inisialisasi Data Pengguna & Saldo
+    let currentTelegramId = null;
+
+    // Inisialisasi Data Pengguna & Pengecekan Hak Akses
     async function initApp() {
       updateCategoryOptions();
       document.getElementById('tx-date').valueAsDate = new Date();
 
       const tgUser = tg?.initDataUnsafe?.user;
-      const userId = tgUser?.id || '';
+      currentTelegramId = tgUser?.id ? String(tgUser.id) : '';
 
       try {
-        const res = await apiCall('getInitialData', { userId: userId });
+        const res = await apiCall('getInitialData', { userId: currentTelegramId });
         if (res.success) {
           currentUser = res.user;
 
           if (currentUser) {
-            document.getElementById('user-display').innerText = `${currentUser.name}`;
+            // JIKA USER VALID & TERDAFTAR
+            document.getElementById('user-display').innerText = currentUser.name;
             document.getElementById('role-badge').innerText = currentUser.role;
+            document.getElementById('tx-admin-badge').innerText = `${currentUser.name} (${currentUser.role})`;
+            
+            document.getElementById('btn-submit').disabled = false;
+            document.getElementById('btn-submit').classList.remove('bg-slate-300', 'cursor-not-allowed');
+            document.getElementById('btn-submit').classList.add('bg-[#1B4D3E]', 'hover:bg-[#153e32]');
+            document.getElementById('access-denied-box').classList.add('hidden');
 
             if (currentUser.role === 'Superadmin') {
               document.getElementById('admin-filter-box').classList.remove('hidden');
@@ -326,7 +348,19 @@ const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwL9guFckX7YicIvHuh
               });
             }
           } else {
-            document.getElementById('user-display').innerText = tgUser ? tgUser.first_name : 'Tamu (Belum Terdaftar)';
+            // JIKA USER TIDAK TERDAFTAR / BELUM MASUK TAB USERS
+            document.getElementById('user-display').innerText = 'Akses Ditolak';
+            document.getElementById('role-badge').innerText = 'Tamu';
+            document.getElementById('tx-admin-badge').innerText = 'Tidak Terdaftar';
+            document.getElementById('my-tg-id').innerText = currentTelegramId || 'Buka via Telegram untuk cek ID';
+            
+            // Kunci tombol submit & form
+            const btn = document.getElementById('btn-submit');
+            btn.disabled = true;
+            btn.classList.remove('bg-[#1B4D3E]', 'hover:bg-[#153e32]');
+            btn.classList.add('bg-slate-300', 'cursor-not-allowed');
+            btn.innerText = 'Input Dinonaktifkan (Belum Terdaftar)';
+            document.getElementById('access-denied-box').classList.remove('hidden');
           }
 
           document.getElementById('bal-hand').innerText = 'Rp ' + Number(res.balances.cashInHand).toLocaleString('id-ID');
