@@ -21,9 +21,12 @@
         <h1 class="text-sm font-bold tracking-wider uppercase">JOFARM FINANCE</h1>
         <p id="user-display" class="text-[11px] text-emerald-200">Memverifikasi akun...</p>
       </div>
-      <span id="role-badge" class="bg-emerald-900/80 text-emerald-100 text-[10px] px-2.5 py-0.5 rounded-full font-medium border border-emerald-700">
-        Kas Mini App
-      </span>
+      <div class="flex items-center space-x-2">
+        <button onclick="initApp()" class="text-xs bg-emerald-800/80 hover:bg-emerald-700 px-2 py-1 rounded-lg border border-emerald-600 transition-all">🔄</button>
+        <span id="role-badge" class="bg-emerald-900/80 text-emerald-100 text-[10px] px-2.5 py-1 rounded-full font-medium border border-emerald-700">
+          Kas Mini App
+        </span>
+      </div>
     </div>
   </header>
 
@@ -32,7 +35,7 @@
     <!-- ==================== TAB 1: FORM INPUT ==================== -->
     <section id="view-input" class="space-y-4">
       
-      <!-- KARTU DUA DOMPET (CASH OPNAME) -->
+      <!-- KARTU DUA DOMPET -->
       <div class="grid grid-cols-2 gap-3">
         <div class="bg-amber-50/80 border border-amber-200/70 p-3.5 rounded-2xl shadow-sm">
           <div class="flex items-center space-x-1.5 text-amber-800 text-[11px] font-semibold">
@@ -69,7 +72,6 @@
             <input type="file" id="tx-photo" accept="image/*" capture="environment" class="hidden">
           </label>
 
-          <!-- Status AI Loading -->
           <div id="ai-loading" class="hidden mt-2 p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center space-x-2 text-emerald-800 text-xs">
             <svg class="animate-spin h-4 w-4 text-emerald-700" fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -83,7 +85,7 @@
           </div>
         </div>
 
-        <!-- PILIHAN JENIS (PENGELUARAN / PEMASUKAN) -->
+        <!-- PILIHAN JENIS -->
         <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl">
           <label class="cursor-pointer">
             <input type="radio" name="jenis" value="Pengeluaran" class="peer sr-only" checked onchange="updateCategoryOptions()">
@@ -99,7 +101,7 @@
           </label>
         </div>
 
-        <!-- PILIHAN DOMPET / AKUN -->
+        <!-- PILIHAN DOMPET -->
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">Dompet / Rekening</label>
           <div class="grid grid-cols-2 gap-2">
@@ -141,19 +143,21 @@
           <label class="block text-xs font-semibold text-slate-600 mb-1">Keterangan</label>
           <input type="text" id="tx-desc" placeholder="Contoh: Beli pakan grower 2 sak" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-emerald-600">
         </div>
-        
-<!-- 👇 SISIPKAN KODE DI SINI (INPUT NAMA ADMIN PENGINPUT) 👇 -->
-        <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1">Admin Penginput</label>
-          <select id="tx-admin-name" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-emerald-600 bg-slate-50">
-            <option value="Superadmin - Owner">Superadmin - Owner</option>
-            <option value="Oma Erna">Oma Erna</option>
-            <option value="Nando">Nando</option>
-            <option value="Acha - AA">Acha - AA</option>
-            <option value="Kak Nana - Koko">Kak Nana - Koko</option>
-          </select>
+
+        <!-- BADGE IDENTITAS PETUGAS (OTOMATIS & TERKUNCI) -->
+        <div class="bg-slate-100 p-3 rounded-xl border border-slate-200 flex justify-between items-center text-xs">
+          <span class="text-slate-500 font-medium">Petugas Input:</span>
+          <span id="tx-admin-badge" class="font-bold text-[#1B4D3E]">Memverifikasi...</span>
         </div>
-        
+
+        <!-- PERINGATAN AKSES DITOLAK (JIKA BELUM DIDAFTARKAN KE TAB USERS) -->
+        <div id="access-denied-box" class="hidden p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-xs space-y-1">
+          <p class="font-bold">⛔ Akses Input Terkunci</p>
+          <p>ID Telegram Anda belum terdaftar di tab <b>Users</b> spreadsheet.</p>
+          <p class="font-mono bg-white p-1 rounded border border-rose-200 text-center font-bold" id="my-tg-id">-</p>
+          <p class="text-[10px] text-rose-600">Salin angka ID di atas dan masukkan ke tab Users di Google Sheets.</p>
+        </div>
+
         <!-- TOMBOL SIMPAN -->
         <button type="submit" id="btn-submit" class="w-full bg-[#1B4D3E] hover:bg-[#153e32] active:scale-[0.99] text-white font-semibold py-3 rounded-xl text-xs transition-all shadow-sm">
           Simpan Transaksi
@@ -174,8 +178,6 @@
 
     <!-- ==================== TAB 3: REKAPAN & LAPORAN ==================== -->
     <section id="view-report" class="hidden space-y-4">
-      
-      <!-- KONTROL FILTER WAKTU -->
       <div class="bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-sm space-y-3">
         <div class="grid grid-cols-3 gap-1 bg-slate-100 p-1 rounded-xl text-center text-xs font-semibold text-slate-600">
           <button type="button" id="btn-period-week" onclick="setPeriod('week')" class="py-1.5 rounded-lg bg-white text-emerald-800 shadow-sm transition-all">Minggu Ini</button>
@@ -183,7 +185,6 @@
           <button type="button" id="btn-period-custom" onclick="setPeriod('custom')" class="py-1.5 rounded-lg transition-all">Kustom</button>
         </div>
 
-        <!-- DATE PICKER KUSTOM -->
         <div id="custom-date-box" class="hidden grid grid-cols-2 gap-2 pt-1">
           <div>
             <label class="block text-[10px] text-slate-500 font-medium">Dari Tanggal</label>
@@ -195,7 +196,6 @@
           </div>
         </div>
 
-        <!-- FILTER ADMIN (KHUSUS SUPERADMIN) -->
         <div id="admin-filter-box" class="hidden pt-1 border-t border-slate-100">
           <label class="block text-[10px] text-slate-500 font-medium mb-1">Filter Admin Lapangan</label>
           <select id="rep-admin-select" class="w-full border border-slate-200 rounded-xl p-2 text-xs font-semibold outline-none">
@@ -208,7 +208,6 @@
         </button>
       </div>
 
-      <!-- KARTU HASIL REKAPAN -->
       <div class="grid grid-cols-2 gap-3">
         <div class="bg-emerald-50 border border-emerald-200/70 p-3 rounded-2xl">
           <span class="text-[10px] font-semibold text-emerald-700 uppercase">Pemasukan Periode</span>
@@ -220,7 +219,6 @@
         </div>
       </div>
 
-      <!-- BREAKDOWN KATEGORI -->
       <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm space-y-2">
         <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Rincian Pengeluaran Kategori</h3>
         <div id="category-breakdown" class="space-y-2 text-xs">
@@ -230,7 +228,7 @@
     </section>
   </main>
 
-  <!-- ==================== MODAL KONFIRMASI ANTI-DOUBLE INPUT ==================== -->
+  <!-- MODAL ANTI-DOUBLE INPUT -->
   <div id="modal-duplicate" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
     <div class="bg-white max-w-sm w-full rounded-2xl p-5 space-y-4 shadow-xl border border-slate-100 animate-in fade-in zoom-in duration-150">
       <div class="flex items-center space-x-2 text-amber-600">
@@ -253,7 +251,7 @@
     </div>
   </div>
 
-  <!-- ==================== BOTTOM NAVIGATION BAR ==================== -->
+  <!-- BOTTOM NAVIGATION -->
   <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200/80 px-6 py-2 flex justify-around items-center z-40 max-w-md mx-auto">
     <button onclick="switchTab('input')" id="nav-input" class="flex flex-col items-center space-y-1 text-emerald-800">
       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -275,11 +273,8 @@
     </button>
   </nav>
 
-  <!-- ==================== LOGIKA JAVASCRIPT ==================== -->
   <script>
-    // MASUKKAN URL GOOGLE APPS SCRIPT EXEC ANDA
-    // SESUDAHNYA (Ganti menjadi):
-const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwL9guFckX7YicIvHuhXSNi6JkISoWgrzLCqafBKMZ7lN4uMvGaSAFBDU2oPiHX2jg/exec';
+    const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwL9guFckX7YicIvHuhXSNi6JkISoWgrzLCqafBKMZ7lN4uMvGaSAFBDU2oPiHX2jg/exec';
 
     const tg = window.Telegram?.WebApp;
     if (tg) {
@@ -288,6 +283,7 @@ const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwL9guFckX7YicIvHuh
     }
 
     let currentUser = null;
+    let currentTelegramId = '';
     let base64Photo = null;
     let pendingPayload = null;
     let currentPeriod = 'week';
@@ -309,13 +305,11 @@ const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwL9guFckX7YicIvHuh
       });
     }
 
-    // Inisialisasi Data Pengguna & Saldo
-    let currentTelegramId = null;
-
     // Inisialisasi Data Pengguna & Pengecekan Hak Akses
     async function initApp() {
       updateCategoryOptions();
       document.getElementById('tx-date').valueAsDate = new Date();
+      document.getElementById('user-display').innerText = 'Menghubungkan ke server...';
 
       const tgUser = tg?.initDataUnsafe?.user;
       currentTelegramId = tgUser?.id ? String(tgUser.id) : '';
@@ -326,7 +320,6 @@ const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwL9guFckX7YicIvHuh
           currentUser = res.user;
 
           if (currentUser) {
-            // JIKA USER VALID & TERDAFTAR
             document.getElementById('user-display').innerText = currentUser.name;
             document.getElementById('role-badge').innerText = currentUser.role;
             document.getElementById('tx-admin-badge').innerText = `${currentUser.name} (${currentUser.role})`;
@@ -334,6 +327,7 @@ const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwL9guFckX7YicIvHuh
             document.getElementById('btn-submit').disabled = false;
             document.getElementById('btn-submit').classList.remove('bg-slate-300', 'cursor-not-allowed');
             document.getElementById('btn-submit').classList.add('bg-[#1B4D3E]', 'hover:bg-[#153e32]');
+            document.getElementById('btn-submit').innerText = 'Simpan Transaksi';
             document.getElementById('access-denied-box').classList.add('hidden');
 
             if (currentUser.role === 'Superadmin') {
@@ -348,13 +342,11 @@ const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwL9guFckX7YicIvHuh
               });
             }
           } else {
-            // JIKA USER TIDAK TERDAFTAR / BELUM MASUK TAB USERS
             document.getElementById('user-display').innerText = 'Akses Ditolak';
             document.getElementById('role-badge').innerText = 'Tamu';
             document.getElementById('tx-admin-badge').innerText = 'Tidak Terdaftar';
             document.getElementById('my-tg-id').innerText = currentTelegramId || 'Buka via Telegram untuk cek ID';
             
-            // Kunci tombol submit & form
             const btn = document.getElementById('btn-submit');
             btn.disabled = true;
             btn.classList.remove('bg-[#1B4D3E]', 'hover:bg-[#153e32]');
@@ -367,6 +359,7 @@ const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwL9guFckX7YicIvHuh
           document.getElementById('bal-bank').innerText = 'Rp ' + Number(res.balances.cashInBank).toLocaleString('id-ID');
         }
       } catch (err) {
+        document.getElementById('user-display').innerText = 'Gagal memuat profil';
         console.error('Inisialisasi gagal:', err);
       }
     }
@@ -421,16 +414,13 @@ const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwL9guFckX7YicIvHuh
           if (d.nominal) document.getElementById('tx-amount').value = d.nominal;
           if (d.keterangan) document.getElementById('tx-desc').value = d.keterangan;
 
-          // Set radio jenis
           const radiosJenis = document.querySelectorAll('input[name="jenis"]');
           radiosJenis.forEach(r => { if (r.value === d.jenis) r.checked = true; });
           updateCategoryOptions();
 
-          // Set radio akun
           const radiosAkun = document.querySelectorAll('input[name="akun"]');
           radiosAkun.forEach(r => { if (r.value === d.akun) r.checked = true; });
 
-          // Set kategori
           if (d.kategori) document.getElementById('tx-category').value = d.kategori;
 
           if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
@@ -443,21 +433,23 @@ const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwL9guFckX7YicIvHuh
       }
     });
 
-    // Submit Transaksi + Deteksi Anti-Double Input
+    // Submit Transaksi
     document.getElementById('tx-form').addEventListener('submit', async function(e) {
       e.preventDefault();
+      if (!currentUser) return alert('Akses ditolak: ID Anda belum terdaftar.');
+
       const btn = document.getElementById('btn-submit');
       btn.disabled = true;
       btn.innerText = 'Memeriksa duplikasi...';
 
       const payload = {
+        userId: currentTelegramId,
         tanggal: document.getElementById('tx-date').value,
         jenis: document.querySelector('input[name="jenis"]:checked').value,
         akun: document.querySelector('input[name="akun"]:checked').value,
         kategori: document.getElementById('tx-category').value,
         nominal: document.getElementById('tx-amount').value,
         keterangan: document.getElementById('tx-desc').value,
-        adminName: currentUser ? currentUser.name : 'Admin',
         imageBase64: base64Photo,
         imageMime: 'image/jpeg'
       };
@@ -526,10 +518,10 @@ const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwL9guFckX7YicIvHuh
 
       const now = new Date();
       const past = new Date();
-      past.setDate(now.getDate() - 30); // 30 hari terakhir
+      past.setDate(now.getDate() - 30);
 
       const res = await apiCall('getReport', {
-        userId: tg?.initDataUnsafe?.user?.id || '',
+        userId: currentTelegramId,
         startDate: past.toISOString().split('T')[0],
         endDate: now.toISOString().split('T')[0],
         selectedAdmin: 'Semua'
@@ -554,7 +546,6 @@ const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwL9guFckX7YicIvHuh
               <span class="text-xs font-black ${isMasuk ? 'text-emerald-600' : 'text-rose-600'}">
                 ${isMasuk ? '+' : '-'} Rp ${Number(tx.nominal).toLocaleString('id-ID')}
               </span>
-              ${tx.notaFormula && tx.notaFormula !== '-' ? `<div class="mt-1 text-[10px] text-emerald-700 font-semibold underline">Bukti Nota</div>` : ''}
             </div>
           `;
           listEl.appendChild(card);
@@ -603,7 +594,7 @@ const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwL9guFckX7YicIvHuh
       const adminFilter = document.getElementById('rep-admin-select').value || 'Semua';
 
       const res = await apiCall('getReport', {
-        userId: tg?.initDataUnsafe?.user?.id || '',
+        userId: currentTelegramId,
         startDate: start.toISOString().split('T')[0],
         endDate: end.toISOString().split('T')[0],
         selectedAdmin: adminFilter
@@ -630,7 +621,7 @@ const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwL9guFckX7YicIvHuh
       }
     }
 
-    // Switch Navigasi Tab
+    // Switch Tab
     function switchTab(tab) {
       ['input', 'history', 'report'].forEach(t => {
         document.getElementById(`view-${t}`).classList.add('hidden');
