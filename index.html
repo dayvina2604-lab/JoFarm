@@ -274,7 +274,38 @@
       </div>
     </div>
   </div>
-
+  
+<!-- ==================== MODAL: HASIL PEMINDAIAN NOTA BERHASIL ==================== -->
+  <div id="modal-scan-success" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+    <div class="bg-white max-w-sm w-full rounded-2xl p-5 space-y-4 shadow-xl text-center animate-in fade-in zoom-in duration-150">
+      <div class="w-12 h-12 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center mx-auto text-2xl font-bold">
+        ✅
+      </div>
+      <div>
+        <h3 class="text-sm font-bold text-slate-800">Nota Berhasil Dibaca!</h3>
+        <p class="text-xs text-slate-500 mt-1">AI telah memasukkan data berikut ke formulir:</p>
+      </div>
+      <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-xs text-left space-y-2 font-medium text-slate-700">
+        <div class="flex justify-between items-center border-b border-slate-200/60 pb-1.5">
+          <span class="text-slate-400">Nominal:</span>
+          <span id="scan-succ-amount" class="font-black text-emerald-800 text-sm">Rp 0</span>
+        </div>
+        <div class="flex justify-between items-center border-b border-slate-200/60 pb-1.5">
+          <span class="text-slate-400">Kategori:</span>
+          <span id="scan-succ-cat" class="font-bold text-slate-800">-</span>
+        </div>
+        <div class="flex justify-between items-start">
+          <span class="text-slate-400">Rincian:</span>
+          <span id="scan-succ-desc" class="text-slate-800 text-right font-normal ml-2 truncate max-w-[180px]">-</span>
+        </div>
+      </div>
+      <p class="text-[10px] text-slate-400">Silakan tinjau kembali data di formulir, lalu klik Simpan.</p>
+      <button type="button" onclick="closeScanSuccessModal()" class="w-full bg-[#1B4D3E] hover:bg-[#153e32] text-white py-2.5 rounded-xl text-xs font-semibold shadow-sm transition-all">
+        Periksa & Simpan Transaksi
+      </button>
+    </div>
+  </div>
+  
   <!-- BOTTOM NAVIGATION -->
   <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200/80 px-6 py-2 flex justify-around items-center z-40 max-w-md mx-auto">
     <button onclick="switchTab('input')" id="nav-input" class="flex flex-col items-center space-y-1 text-emerald-800">
@@ -454,19 +485,54 @@
       });
     }
 
-    // Pemrosesan Scan Nota
+    // Fungsi Pencocokan Kategori Otomatis
+    function matchCategory(catStr, jenis) {
+      if (!catStr) return categories[jenis][0];
+      const lower = String(catStr).toLowerCase();
+      if (jenis === 'Pengeluaran') {
+        if (lower.includes('pakan') || lower.includes('dedak') || lower.includes('jagung') || lower.includes('konsentrat')) return 'Pakan';
+        if (lower.includes('obat') || lower.includes('vaksin') || lower.includes('vitamin') || lower.includes('medis')) return 'Obat/Vaksin';
+        if (lower.includes('operasional') || lower.includes('bbm') || lower.includes('bensin') || lower.includes('solar') || lower.includes('listrik') || lower.includes('servis')) return 'Operasional';
+        if (lower.includes('alat') || lower.includes('peralatan') || lower.includes('ember') || lower.includes('pipa') || lower.includes('lampu')) return 'Peralatan';
+        return 'Lain-lain';
+      } else {
+        if (lower.includes('top up') || lower.includes('modal') || lower.includes('saldo')) return 'Top Up Saldo';
+        if (lower.includes('telur')) return 'Penjualan Telur';
+        if (lower.includes('ayam') || lower.includes('afkir') || lower.includes('daging')) return 'Penjualan Ayam';
+        if (lower.includes('sayur') || lower.includes('pupuk') || lower.includes('kebun')) return 'Penjualan Sayur/Pupuk';
+        return 'Pemasukan Lain';
+      }
+    }
+
+    function showScanSuccessModal(nominal, kategori, keterangan) {
+      document.getElementById('scan-succ-amount').innerText = 'Rp ' + Number(nominal || 0).toLocaleString('id-ID');
+      document.getElementById('scan-succ-cat').innerText = kategori;
+      document.getElementById('scan-succ-desc').innerText = keterangan || '-';
+      document.getElementById('modal-scan-success').classList.remove('hidden');
+    }
+
+    function closeScanSuccessModal() {
+      document.getElementById('modal-scan-success').classList.add('hidden');
+      // Beri efek sorotan hijau pada input nominal agar fokus mata tertuju ke sana
+      const amtInput = document.getElementById('tx-amount');
+      amtInput.focus();
+      amtInput.classList.add('ring-2', 'ring-emerald-500');
+      setTimeout(() => amtInput.classList.remove('ring-2', 'ring-emerald-500'), 2500);
+    }
+
+    // Event Listener Unggah & Scan Nota
     document.getElementById('tx-photo').addEventListener('change', async function(e) {
       const file = e.target.files[0];
       if (!file) return;
 
-      showAiLoading('Mengompres Foto...', 'Menyiapkan nota dengan ukuran hemat memori');
+      showAiLoading('Mengompres Foto...', 'Menyiapkan berkas gambar hemat memori');
 
       try {
         base64Photo = await compressImageSafe(file);
         document.getElementById('photo-preview').src = base64Photo;
         document.getElementById('preview-box').classList.remove('hidden');
 
-        showAiLoading('Gemini AI Membaca...', 'Menganalisis nominal dan rincian struk');
+        showAiLoading('Gemini AI Membaca...', 'Sedang mengenali toko, barang, dan nominal struk');
 
         scanAbortController = new AbortController();
         const res = await apiCall('scanReceipt', {
@@ -478,26 +544,42 @@
 
         if (res.success && res.data) {
           const d = res.data;
+          
+          // 1. Tanggal
           if (d.tanggal) document.getElementById('tx-date').value = d.tanggal;
-          if (d.nominal) document.getElementById('tx-amount').value = d.nominal;
+          
+          // 2. Nominal
+          const nominalVal = Number(d.nominal) || 0;
+          document.getElementById('tx-amount').value = nominalVal > 0 ? nominalVal : '';
+          
+          // 3. Keterangan
           if (d.keterangan) document.getElementById('tx-desc').value = d.keterangan;
 
+          // 4. Jenis Transaksi
           const radiosJenis = document.querySelectorAll('input[name="jenis"]');
-          radiosJenis.forEach(r => { if (r.value === d.jenis) r.checked = true; });
+          radiosJenis.forEach(r => { if (r.value === (d.jenis || 'Pengeluaran')) r.checked = true; });
           updateCategoryOptions();
 
+          // 5. Akun Dompet
           const radiosAkun = document.querySelectorAll('input[name="akun"]');
-          radiosAkun.forEach(r => { if (r.value === d.akun) r.checked = true; });
+          radiosAkun.forEach(r => { if (r.value === (d.akun || 'Cash in Hand')) r.checked = true; });
 
-          if (d.kategori) document.getElementById('tx-category').value = d.kategori;
+          // 6. Kategori (dengan Smart Matching)
+          const matchedCategory = matchCategory(d.kategori, d.jenis || 'Pengeluaran');
+          document.getElementById('tx-category').value = matchedCategory;
 
+          // Respon Getar Haptic Telegram
           if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+
+          // Munculkan Pop-up Notifikasi Berhasil
+          showScanSuccessModal(nominalVal, matchedCategory, d.keterangan);
+
         } else {
-          showErrorModal('Nota Kurang Jelas', res.message || 'Data struk tidak terbaca lengkap. Foto tetap terlampir, silakan lengkapi nominal & keterangan secara manual.');
+          showErrorModal('Nota Kurang Terbaca', res.message || 'Data struk tidak terbaca jelas. Foto tetap terlampir, silakan lengkapi nominal secara manual.');
         }
       } catch (err) {
         hideAiLoading();
-        showErrorModal('Info Pemindaian', 'Koneksi AI sedang lambat. Foto nota tetap terpasang, silakan isi nominal & keterangan secara manual.');
+        showErrorModal('Info Pemindaian', 'Koneksi AI sedang lambat. Foto nota tetap tersimpan, silakan lengkapi nominal secara manual.');
       }
     });
 
